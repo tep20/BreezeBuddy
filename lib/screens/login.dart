@@ -1,134 +1,136 @@
 ﻿import 'package:flutter/material.dart';
-import 'splash.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'main_nav.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
+  @override
+  _LoginScreenState createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  // Variabel untuk toggle antara Login dan Register
+  bool isRegister = false;
+  final emailController = TextEditingController();
+  final passController = TextEditingController();
+  final nameController = TextEditingController();
+
+  Future<void> handleAuth() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    if (isRegister) {
+      // Logika Registrasi
+      if (nameController.text.isEmpty ||
+          emailController.text.isEmpty ||
+          passController.text.isEmpty) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Mohon isi semua data!')));
+        return;
+      }
+      await prefs.setString('user_email', emailController.text);
+      await prefs.setString('user_pass', passController.text);
+      await prefs.setString('user_name', nameController.text);
+
+      // Setelah daftar, kembali ke mode login
+      setState(() => isRegister = false);
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Akun berhasil dibuat! Silakan login.')),
+        );
+    } else {
+      // Logika Login
+      String? savedEmail = prefs.getString('user_email');
+      String? savedPass = prefs.getString('user_pass');
+
+      if (emailController.text == savedEmail &&
+          passController.text == savedPass &&
+          savedEmail != null) {
+        await prefs.setBool('is_logged_in', true);
+        if (mounted)
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const MainNavigation()),
+          );
+      } else {
+        if (mounted)
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Email atau Password salah!')),
+          );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF00796B), Color(0xFF26A69A)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24.0,
-                vertical: 32.0,
+      backgroundColor: const Color(0xFFE8F1F2),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            children: [
+              Image.asset('assets/images/logo.jpg', height: 120),
+              const SizedBox(height: 20),
+              Text(
+                isRegister ? "Create Account" : "Sign In",
+                style: GoogleFonts.poppins(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(18.0),
-                    decoration: BoxDecoration(
-                      color: const Color(0x29FFFFFF),
-                      borderRadius: BorderRadius.circular(28.0),
-                    ),
-                    child: Center(
-                      child: Image.asset(
-                        'assets/images/logo.jpg',
-                        height: 140,
-                        fit: BoxFit.contain,
-                      ),
-                    ),
+              const SizedBox(height: 20),
+
+              // Field Nama hanya muncul saat mode Registrasi
+              if (isRegister) ...[
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Full Name',
+                    border: OutlineInputBorder(),
                   ),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'Welcome to BreezeBuddy',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Log in to access your journal, weather insight, audio calm sessions, and personalized statistics.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 14,
-                      height: 1.6,
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  Card(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24.0),
-                    ),
-                    elevation: 10,
-                    color: Colors.white,
-                    child: Padding(
-                      padding: const EdgeInsets.all(22.0),
-                      child: Column(
-                        children: const [
-                          TextField(
-                            decoration: InputDecoration(
-                              labelText: 'Email Address',
-                              prefixIcon: Icon(Icons.email),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.all(
-                                  Radius.circular(18.0),
-                                ),
-                              ),
-                              filled: true,
-                              fillColor: Colors.white,
-                            ),
-                          ),
-                          SizedBox(height: 18),
-                          TextField(
-                            obscureText: true,
-                            decoration: InputDecoration(
-                              labelText: 'Password',
-                              prefixIcon: Icon(Icons.lock),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.all(
-                                  Radius.circular(18.0),
-                                ),
-                              ),
-                              filled: true,
-                              fillColor: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  FilledButton(
-                    style: FilledButton.styleFrom(
-                      minimumSize: const Size.fromHeight(52),
-                      backgroundColor: Colors.white,
-                      foregroundColor: const Color(0xFF00796B),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18.0),
-                      ),
-                    ),
-                    onPressed: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (context) => SplashScreen()),
-                      );
-                    },
-                    child: const Text(
-                      'Log In',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
+                ),
+                const SizedBox(height: 15),
+              ],
+
+              TextField(
+                controller: emailController,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  border: OutlineInputBorder(),
+                ),
               ),
-            ),
+              const SizedBox(height: 15),
+              TextField(
+                controller: passController,
+                decoration: const InputDecoration(
+                  labelText: 'Password',
+                  border: OutlineInputBorder(),
+                ),
+                obscureText: true,
+              ),
+              const SizedBox(height: 25),
+
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 50),
+                ),
+                onPressed: handleAuth,
+                child: Text(isRegister ? 'Register' : 'Log In'),
+              ),
+
+              // Tombol untuk pindah mode antara Login dan Register
+              TextButton(
+                onPressed: () => setState(() => isRegister = !isRegister),
+                child: Text(
+                  isRegister
+                      ? 'Sudah punya akun? Login'
+                      : 'Belum punya akun? Register',
+                ),
+              ),
+            ],
           ),
         ),
       ),

@@ -1,24 +1,26 @@
 import 'package:flutter/material.dart';
 import 'dashboard.dart';
 import 'jurnal.dart';
-import 'audio.dart';
 import 'statistik.dart';
 import 'profil.dart';
+import 'audio.dart'; // Pastikan mengimpor file yang benar
 
 class MainNavigation extends StatefulWidget {
+  const MainNavigation({super.key});
+
   @override
   _MainNavigationState createState() => _MainNavigationState();
 }
 
 class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
-  
+
   final List<Widget> _screens = [
-    DashboardScreen(), 
-    JurnalScreen(), 
-    AudioScreen(), 
+    const DashboardScreen(),
+    JurnalScreen(),
+    const OceanSoundPlayerScreen(), // Menggunakan kelas yang benar dari audio.dart
     StatistikScreen(),
-    ProfilScreen()
+    const ProfilScreen(),
   ];
 
   @override

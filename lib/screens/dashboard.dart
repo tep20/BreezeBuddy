@@ -1,172 +1,182 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:intl/intl.dart';
+import '../database/db_helper.dart';
+import '../widgets/custom_widgets.dart';
+import 'jurnal.dart';
+import 'audio.dart';
 
 class DashboardScreen extends StatefulWidget {
+  const DashboardScreen({super.key});
+
   @override
   _DashboardScreenState createState() => _DashboardScreenState();
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  String suhu = "Memuat...";
-  String kondisi = "-";
-  String saran = "Mencari data cuaca...";
+  List<Map<String, dynamic>> _journals = [];
+  String suhu = "--";
+  String kualitasUdara = "--";
+
+  final List<Map<String, dynamic>> kategoriList = [
+    {'nama': 'Belajar', 'icon': Icons.school},
+    {'nama': 'Bekerja', 'icon': Icons.work},
+    {'nama': 'Meeting', 'icon': Icons.groups},
+    {'nama': 'Shopping', 'icon': Icons.shopping_cart},
+    {'nama': 'Liburan', 'icon': Icons.beach_access},
+    {'nama': 'Olahraga', 'icon': Icons.fitness_center},
+    {'nama': 'Traveling', 'icon': Icons.flight},
+  ];
 
   @override
   void initState() {
     super.initState();
-    fetchCuaca();
+    _loadData();
+    _fetchCuaca();
   }
 
-  Future<void> fetchCuaca() async {
-    String apiKey = "28c1ea6e639f9a9d385b010f051c0adc";
-    String url =
-        "https://api.openweathermap.org/data/2.5/weather?q=Tangerang Selatan&units=metric&appid=$apiKey";
+  void _loadData() async {
+    final data = await DBHelper.getData();
+    if (mounted) setState(() => _journals = data);
+  }
 
+  Future<void> _fetchCuaca() async {
+    const String apiKey = "28c1ea6e639f9a9d385b010f051c0adc";
+    const String url = "https://api.openweathermap.org/data/2.5/weather?q=Jakarta&units=metric&appid=$apiKey";
+    
     try {
-      var response = await http.get(Uri.parse(url));
+      final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
-        var data = jsonDecode(response.body);
-        setState(() {
-          suhu = "${data['main']['temp']}°C";
-          kondisi = data['weather'][0]['main'];
-          saran = kondisi.toLowerCase().contains('rain')
-              ? "Bawa jas hujan untuk perjalananmu."
-              : "Cuaca bagus untuk aktivitas luar.";
-        });
-      } else {
-        setState(() {
-          suhu = "Tidak tersedia";
-          kondisi = "-";
-          saran = "Coba lagi nanti.";
-        });
+        final data = jsonDecode(response.body);
+        if (mounted) {
+          setState(() {
+            suhu = "${data['main']['temp'].round()}°C";
+            kualitasUdara = data['main']['humidity'] > 80 ? "Humid" : "Good";
+          });
+        }
       }
-    } catch (_) {
-      setState(() {
-        suhu = "Gagal";
-        kondisi = "Error";
-        saran = "Periksa koneksi internetmu.";
-      });
+    } catch (e) {
+      debugPrint("Error fetching weather: $e");
     }
+  }
+
+  void _showDetailModal(BuildContext context, Map<String, dynamic> item) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(item['aktivitas'], style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+            Text("Tanggal: ${item['tanggal']}"),
+            Text("Kategori: ${item['kategori']}"),
+            const SizedBox(height: 10),
+            Text("Isi Aktivitas: ${item['detail'] ?? 'Tidak ada deskripsi.'}"),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    String hariIni = DateFormat('EEEE, d MMM yyyy').format(DateTime.now());
-
     return Scaffold(
-      appBar: AppBar(title: const Text('Welcome back, Tito!'), elevation: 0),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.teal.shade50,
-                borderRadius: BorderRadius.circular(24.0),
-                boxShadow: [
-                  const BoxShadow(
-                    color: Color(0x0F000000),
-                    blurRadius: 18,
-                    offset: Offset(0, 10),
-                  ),
-                ],
-              ),
-              padding: const EdgeInsets.all(24.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      backgroundColor: const Color(0xFFE8F1F2),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("Welcome back, Tito!", style: GoogleFonts.poppins(fontSize: 28, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 20),
+              
+              // Quick Actions (Sudah diperbaiki)
+              Row(
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        hariIni,
-                        style: Theme.of(context).textTheme.labelLarge,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        suhu,
-                        style: const TextStyle(
-                          fontSize: 38,
-                          fontWeight: FontWeight.bold,
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => JurnalScreen())),
+                      child: NeumorphicContainer(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: const [
+                            Icon(Icons.book, color: Colors.teal),
+                            SizedBox(height: 8),
+                            Text("Journal"),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 6),
-                      Text(kondisi, style: const TextStyle(fontSize: 18)),
-                    ],
-                  ),
-                  Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.teal.shade100,
-                    ),
-                    padding: const EdgeInsets.all(16.0),
-                    child: const Icon(
-                      Icons.cloud,
-                      size: 56,
-                      color: Colors.teal,
                     ),
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-            Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              elevation: 4,
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Insight Cuaca',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                  const SizedBox(width: 15),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OceanSoundPlayerScreen())),
+                      child: NeumorphicContainer(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: const [
+                            Icon(Icons.music_note, color: Colors.teal),
+                            SizedBox(height: 8),
+                            Text("Audio"),
+                          ],
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      saran,
-                      style: const TextStyle(fontSize: 16, height: 1.5),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                color: Colors.white,
-                boxShadow: [
-                  const BoxShadow(
-                    color: Color(0x0D000000),
-                    blurRadius: 16,
-                    offset: Offset(0, 8),
                   ),
                 ],
               ),
-              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
-              child: Row(
+              
+              const SizedBox(height: 20),
+              Text("Today's Insights", style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 10),
+              
+              // Insights Row
+              Row(
                 children: [
-                  const Icon(Icons.insights, color: Colors.teal),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Text(
-                      'Sesi harian yang tenang membuat mood lebih stabil dan membantu menjaga fokus.',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ),
+                  Expanded(child: GlassCard(child: Padding(padding: const EdgeInsets.all(15), 
+                    child: Column(children: [const Icon(Icons.wb_sunny, color: Colors.amber, size: 30), Text("Weather: $suhu", style: GoogleFonts.poppins())])))),
+                  const SizedBox(width: 10),
+                  Expanded(child: GlassCard(child: Padding(padding: const EdgeInsets.all(15), 
+                    child: Column(children: [const Icon(Icons.air, color: Colors.blue, size: 30), Text("Air Quality: $kualitasUdara", style: GoogleFonts.poppins())])))),
                 ],
               ),
-            ),
-          ],
+              
+              const SizedBox(height: 20),
+              Text("Recent Journal Entries", style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
+              
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _journals.length,
+                itemBuilder: (context, index) {
+                  final item = _journals[index];
+                  final kategori = kategoriList.firstWhere(
+                    (k) => k['nama'] == item['kategori'], 
+                    orElse: () => {'nama': 'Lainnya', 'icon': Icons.event}
+                  );
+
+                  return Container(
+                    margin: const EdgeInsets.only(top: 10),
+                    child: NeumorphicContainer(
+                      child: ListTile(
+                        leading: Icon(kategori['icon'], color: Colors.teal),
+                        title: Text(item['aktivitas'], style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+                        subtitle: Text(item['detail'] ?? "", maxLines: 1, overflow: TextOverflow.ellipsis),
+                        onTap: () => _showDetailModal(context, item),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );

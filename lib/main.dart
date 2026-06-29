@@ -1,23 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/login.dart';
+import 'screens/main_nav.dart';
 import 'screens/dashboard.dart';
 import 'screens/jurnal.dart';
 import 'screens/audio.dart';
 import 'screens/statistik.dart';
 import 'screens/profil.dart';
 
-final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier<ThemeMode>(
-  ThemeMode.light,
-);
+final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier<ThemeMode>(ThemeMode.light);
 
-void main() {
-WidgetsFlutterBinding.ensureInitialized();
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Cek status login di SharedPreferences
+  final prefs = await SharedPreferences.getInstance();
+  final bool isLoggedIn = prefs.getBool('is_logged_in') ?? false;
 
-  runApp(BreezeBuddyApp());
-
+  runApp(BreezeBuddyApp(isLoggedIn: isLoggedIn));
 }
 
 class BreezeBuddyApp extends StatelessWidget {
+  final bool isLoggedIn;
+  const BreezeBuddyApp({super.key, required this.isLoggedIn});
+
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder(
@@ -26,89 +31,13 @@ class BreezeBuddyApp extends StatelessWidget {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
           title: 'BreezeBuddy',
-          theme: ThemeData(
-            useMaterial3: true,
-            colorSchemeSeed: Colors.teal,
-            brightness: Brightness.light,
-          ),
-          darkTheme: ThemeData(
-            useMaterial3: true,
-            colorSchemeSeed: Colors.teal,
-            brightness: Brightness.dark,
-          ),
+          theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.teal, brightness: Brightness.light),
+          darkTheme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.teal, brightness: Brightness.dark),
           themeMode: currentMode,
-          home: SplashScreen(),
+          // Arahkan ke MainNavigation jika sudah login, jika belum ke LoginScreen
+          home: isLoggedIn ? const MainNavigation() : const LoginScreen(),
         );
       },
-    );
-  }
-}
-
-class SplashScreen extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    Future.delayed(const Duration(seconds: 3), () {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => LoginScreen()),
-      );
-    });
-    return Scaffold(
-      backgroundColor: Colors.teal,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            Icon(Icons.cloud, size: 100, color: Colors.white),
-            Text(
-              'BreezeBuddy',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class MainNavigation extends StatefulWidget {
-  @override
-  _MainNavigationState createState() => _MainNavigationState();
-}
-
-class _MainNavigationState extends State {
-  int _currentIndex = 0;
-
-  final List _screens = [
-    DashboardScreen(),
-    JurnalScreen(),
-    AudioScreen(),
-    StatistikScreen(),
-    ProfilScreen(),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: _screens[_currentIndex],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (index) => setState(() => _currentIndex = index),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.home), label: 'Home'),
-          NavigationDestination(icon: Icon(Icons.book), label: 'Jurnal'),
-          NavigationDestination(icon: Icon(Icons.music_note), label: 'Audio'),
-          NavigationDestination(
-            icon: Icon(Icons.bar_chart),
-            label: 'Statistik',
-          ),
-          NavigationDestination(icon: Icon(Icons.person), label: 'Profil'),
-        ],
-      ),
     );
   }
 }

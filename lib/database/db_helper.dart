@@ -2,42 +2,50 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
 class DBHelper {
-  static Database? _db;
   static const String tableName = 'jurnal';
 
-  static Future<Database> get db async {
-    if (_db != null) return _db!;
-    _db = await initDB();
-    return _db!;
-  }
-
   static Future<Database> initDB() async {
-  String path = join(await databaseFactory.getDatabasesPath(), 'breezebuddy.db');
-  return await databaseFactory.openDatabase(path, options: OpenDatabaseOptions(
-    version: 1,
-    onCreate: (db, version) {
-      db.execute('CREATE TABLE jurnal(id INTEGER PRIMARY KEY AUTOINCREMENT, aktivitas TEXT, tanggal TEXT, cuaca TEXT)');
-    },
-  ));
+    String path = join(await getDatabasesPath(), 'breezebuddy.db');
+    return await openDatabase(
+      path,
+      version: 1,
+      onCreate: (db, version) async {
+        await db.execute('''
+        CREATE TABLE jurnal(
+          id INTEGER PRIMARY KEY AUTOINCREMENT, 
+          aktivitas TEXT, 
+          detail TEXT, 
+          kategori TEXT, 
+          tanggal TEXT, 
+          cuaca TEXT
+        )
+      ''');
+      },
+    );
   }
 
   static Future<int> insert(Map<String, dynamic> data) async {
-    Database dbClient = await db;
-    return await dbClient.insert(tableName, data);
+    final db = await initDB(); // Pastikan selalu ambil instance baru
+    return await db.insert(tableName, data);
   }
 
   static Future<List<Map<String, dynamic>>> getData() async {
-    Database dbClient = await db;
-    return await dbClient.query(tableName, orderBy: "id DESC");
+    final db = await initDB();
+    return await db.query(tableName, orderBy: "id DESC");
   }
 
   static Future<int> update(Map<String, dynamic> data) async {
-    Database dbClient = await db;
-    return await dbClient.update(tableName, data, where: 'id = ?', whereArgs: [data['id']]);
+    final db = await initDB();
+    return await db.update(
+      tableName,
+      data,
+      where: 'id = ?',
+      whereArgs: [data['id']],
+    );
   }
 
   static Future<int> delete(int id) async {
-    Database dbClient = await db;
-    return await dbClient.delete(tableName, where: 'id = ?', whereArgs: [id]);
+    final db = await initDB();
+    return await db.delete(tableName, where: 'id = ?', whereArgs: [id]);
   }
 }
