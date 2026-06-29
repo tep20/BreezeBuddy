@@ -18,6 +18,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<Map<String, dynamic>> _journals = [];
   String suhu = "--";
   String kualitasUdara = "--";
+  bool _isLoadingWeather = true; // Indikator loading
 
   final List<Map<String, dynamic>> kategoriList = [
     {'nama': 'Belajar', 'icon': Icons.school},
@@ -43,21 +44,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _fetchCuaca() async {
     const String apiKey = "28c1ea6e639f9a9d385b010f051c0adc";
-    const String url = "https://api.openweathermap.org/data/2.5/weather?q=Jakarta&units=metric&appid=$apiKey";
-    
+    const String url =
+        "https://api.openweathermap.org/data/2.5/weather?q=Jakarta&units=metric&appid=$apiKey";
+
     try {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (mounted) {
           setState(() {
-            suhu = "${data['main']['temp'].round()}°C";
-            kualitasUdara = data['main']['humidity'] > 80 ? "Humid" : "Good";
+            suhu = "${(data['main']['temp'] as num).round()}°C";
+            kualitasUdara = (data['main']['humidity'] as num) > 80
+                ? "Humid"
+                : "Good";
+            _isLoadingWeather = false;
           });
         }
+      } else {
+        if (mounted) setState(() => _isLoadingWeather = false);
       }
     } catch (e) {
       debugPrint("Error fetching weather: $e");
+      if (mounted) setState(() => _isLoadingWeather = false);
     }
   }
 
@@ -71,7 +79,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(item['aktivitas'], style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text(
+              item['aktivitas'],
+              style: GoogleFonts.poppins(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 10),
             Text("Tanggal: ${item['tanggal']}"),
             Text("Kategori: ${item['kategori']}"),
@@ -93,15 +107,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Welcome back, Tito!", style: GoogleFonts.poppins(fontSize: 28, fontWeight: FontWeight.bold)),
+              Text(
+                "Welcome back, Tito!",
+                style: GoogleFonts.poppins(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               const SizedBox(height: 20),
-              
-              // Quick Actions (Sudah diperbaiki)
+
               Row(
                 children: [
                   Expanded(
                     child: GestureDetector(
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => JurnalScreen())),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => JurnalScreen()),
+                      ),
                       child: NeumorphicContainer(
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
@@ -117,7 +139,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(width: 15),
                   Expanded(
                     child: GestureDetector(
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OceanSoundPlayerScreen())),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const OceanSoundPlayerScreen(),
+                        ),
+                      ),
                       child: NeumorphicContainer(
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
@@ -132,25 +159,72 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ],
               ),
-              
+
               const SizedBox(height: 20),
-              Text("Today's Insights", style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(
+                "Today's Insights",
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               const SizedBox(height: 10),
-              
-              // Insights Row
+
               Row(
                 children: [
-                  Expanded(child: GlassCard(child: Padding(padding: const EdgeInsets.all(15), 
-                    child: Column(children: [const Icon(Icons.wb_sunny, color: Colors.amber, size: 30), Text("Weather: $suhu", style: GoogleFonts.poppins())])))),
+                  Expanded(
+                    child: GlassCard(
+                      child: Padding(
+                        padding: const EdgeInsets.all(15),
+                        child: Column(
+                          children: [
+                            const Icon(
+                              Icons.wb_sunny,
+                              color: Colors.amber,
+                              size: 30,
+                            ),
+                            Text(
+                              _isLoadingWeather
+                                  ? "Loading..."
+                                  : "Weather: $suhu",
+                              style: GoogleFonts.poppins(),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                   const SizedBox(width: 10),
-                  Expanded(child: GlassCard(child: Padding(padding: const EdgeInsets.all(15), 
-                    child: Column(children: [const Icon(Icons.air, color: Colors.blue, size: 30), Text("Air Quality: $kualitasUdara", style: GoogleFonts.poppins())])))),
+                  Expanded(
+                    child: GlassCard(
+                      child: Padding(
+                        padding: const EdgeInsets.all(15),
+                        child: Column(
+                          children: [
+                            const Icon(Icons.air, color: Colors.blue, size: 30),
+                            Text(
+                              _isLoadingWeather
+                                  ? "..."
+                                  : "Quality: $kualitasUdara",
+                              style: GoogleFonts.poppins(),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
-              
+
               const SizedBox(height: 20),
-              Text("Recent Journal Entries", style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
-              
+              Text(
+                "Recent Journal Entries",
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+
               ListView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -158,17 +232,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 itemBuilder: (context, index) {
                   final item = _journals[index];
                   final kategori = kategoriList.firstWhere(
-                    (k) => k['nama'] == item['kategori'], 
-                    orElse: () => {'nama': 'Lainnya', 'icon': Icons.event}
+                    (k) => k['nama'] == item['kategori'],
+                    orElse: () => {'nama': 'Lainnya', 'icon': Icons.event},
                   );
 
                   return Container(
                     margin: const EdgeInsets.only(top: 10),
                     child: NeumorphicContainer(
                       child: ListTile(
-                        leading: Icon(kategori['icon'], color: Colors.teal),
-                        title: Text(item['aktivitas'], style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-                        subtitle: Text(item['detail'] ?? "", maxLines: 1, overflow: TextOverflow.ellipsis),
+                        leading: Icon(
+                          kategori['icon'] as IconData,
+                          color: Colors.teal,
+                        ),
+                        title: Text(
+                          item['aktivitas'],
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        subtitle: Text(
+                          item['detail'] ?? "",
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                         onTap: () => _showDetailModal(context, item),
                       ),
                     ),
